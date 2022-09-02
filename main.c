@@ -132,14 +132,19 @@ void answerLoop(int *x, int *y) {
     char answer[3];
     fgets(answer, sizeof(answer), stdin);
     consume_rest_of_line();
-    if (!(64 < answer[0] &&
-          answer[0] < 68)) { // Determine if first char is a letter
+
+    // Determine validity of answer
+    // First character
+    if (answer[0] >= 'a' && answer[0] <= 'c') {
+      answer[0] = answer[0] - 32; // Convert to upper case
+    } else if (answer[0] >= 'A' && answer[0] <= 'C') {
+
+    } else {
       printf("First character isn't a letter.");
       continue;
     }
-
-    if (!(48 < answer[1] &&
-          answer[1] < 52)) { // Determine if second char is a number
+    // Second character
+    if (!(answer[1] >= '1' && answer[1] <= '3')) {
       printf("Second character isn't a number.");
       continue;
     }
@@ -345,6 +350,10 @@ void mainLoop() {
   }
 }
 
+void clearScreen() {
+  printf("\e[1;1H\e[2J"); // Clears the screen
+}
+
 void characterSelect() {
   while (1) {
     char character;
@@ -353,14 +362,14 @@ void characterSelect() {
     consume_rest_of_line();
 
     if (character == 'X' || character == 'x') {
-      printf("\e[1;1H\e[2J");
+      clearScreen();
       printf("You picked the Xs.\n");
       playsX = true;
       break;
     }
 
     if (character == 'O' || character == 'o') {
-      printf("\e[1;1H\e[2J");
+      clearScreen();
       printf("You picked the Os.\n");
       break;
     }
@@ -371,7 +380,7 @@ void characterSelect() {
 
 int main() {
   printf("Welcome to butter cheese and eggs in C.\n");
-  srand(time(NULL));
+  srand(time(NULL)); // Give random number generator a seed.
   characterSelect();
 
   mainLoop();
