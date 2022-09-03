@@ -28,21 +28,23 @@ void drawGrid(int grid[WIDTH][WIDTH]) {
   int i, j;
 
   for (i = 0; i < 3; i++) {
+    // ABC 123 stuff
     if (i == 0) {
-      printf("  1 2 3\n");
+      printf("\n  1 2 3\n");
     }
     switch (i) {
     case 0:
       printf("A|");
       break;
     case 1:
-      printf("\nB|");
+      printf("B|");
       break;
     case 2:
-      printf("\nC|");
+      printf("C|");
       break;
     }
 
+    // Board
     for (j = 0; j < 3; j++) {
       if (grid[i][j] == 0) {
         printf(" |");
@@ -52,6 +54,10 @@ void drawGrid(int grid[WIDTH][WIDTH]) {
         printf("O|");
       }
     }
+
+    // New line
+    printf("\n");
+
   }
 }
 
@@ -296,6 +302,7 @@ struct vector gameIsOver() {
 void opponentTurn() {
   // Pick the center square by default if its empty.
   if (board[1][1] == 0) {
+    printf("\nOpponent picked (0, 0)\n");
     board[1][1] = playsX ? 2 : 1;
     return;
   }
@@ -312,32 +319,33 @@ void opponentTurn() {
   }
 }
 
+void playerTurn() { // Players turn
+  int x, y;
+  answerLoop(&x, &y);
+  printf("You picked (%d, %d)\n", x, y);
+  board[x][y] = playsX ? 1 : 2;
+}
+
 void mainLoop() {
   int moveCount = 0;
+  bool turnToggle = false;
+  
   while (1) {
     // Draw the board
     drawGrid(board);
 
-    // Players turn
-    int x, y;
-    answerLoop(&x, &y);
-    printf("You picked (%d, %d)\n", x, y);
-    board[x][y] = playsX ? 1 : 2;
-    moveCount++;
+    if (turnToggle) {
+      // CPUs turn
+      opponentTurn();
+    } else {
+      playerTurn();
+    }
+
+    turnToggle = !turnToggle;
+    moveCount++;    
 
     // Check game state
     struct vector r = gameIsOver();
-    if (r.isValid) {
-      drawVictoryGrid(board, r);
-      break;
-    }
-
-    // CPUs turn
-    opponentTurn();
-    moveCount++;
-
-    // Check game state
-    r = gameIsOver();
     if (r.isValid) {
       drawVictoryGrid(board, r);
       break;
@@ -354,6 +362,23 @@ void clearScreen() {
   printf("\e[1;1H\e[2J"); // Clears the screen
 }
 
+int characterIsValid(char c) { // Determines if given character by user is a valid character, non-zero value means valid.
+  if (c == 'X' || c == 'x') {
+      clearScreen();
+      printf("You picked the Xs.\n");
+      playsX = true;
+      return 1;
+  }
+  else if (c == 'O' || c == 'o') {
+      clearScreen();
+      printf("You picked the Os.\n");
+      return 2;
+  } else {
+    printf("Invalid input. Please pick either Xs or Os by typing the letter");
+    return 0;
+  }
+}
+
 void characterSelect() {
   while (1) {
     char character;
@@ -361,20 +386,9 @@ void characterSelect() {
     character = fgetc(stdin);
     consume_rest_of_line();
 
-    if (character == 'X' || character == 'x') {
-      clearScreen();
-      printf("You picked the Xs.\n");
-      playsX = true;
+    if (characterIsValid(character) > 0) {
       break;
     }
-
-    if (character == 'O' || character == 'o') {
-      clearScreen();
-      printf("You picked the Os.\n");
-      break;
-    }
-
-    printf("Invalid input. Please pick either Xs or Os by typing the letter");
   }
 }
 
