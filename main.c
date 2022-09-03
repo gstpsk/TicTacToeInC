@@ -7,10 +7,12 @@
 #define WIDTH 3
 
 bool playsX = false;
+int playerScore = 0;
+int cpuScore = 0;
 
 const char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-int board[WIDTH][WIDTH] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+int board[WIDTH][WIDTH];
 
 // 0: Empty
 // 1: X
@@ -21,6 +23,7 @@ struct vector { // Vector to store result
   int beginY;
   int deltaX;
   int deltaY;
+  bool playerLost;
   bool isValid;
 };
 
@@ -57,7 +60,6 @@ void drawGrid(int grid[WIDTH][WIDTH]) {
 
     // New line
     printf("\n");
-
   }
 }
 
@@ -132,12 +134,25 @@ void consume_rest_of_line(void) {
   }
 }
 
+void printScore() {
+  printf("Score:\nPlayer - %d\nCPU - %d\n", playerScore, cpuScore);
+}
+
 void answerLoop(int *x, int *y) {
   while (1) {
-    printf("\nEnter coordinates for your next move (ex.: B2): ");
-    char answer[3];
+    printf("\nEnter coordinates for your next move (ex.: B2), type 'score' for "
+           "the current count: ");
+    char answer[6];
+    char score[6] = "score";
     fgets(answer, sizeof(answer), stdin);
-    consume_rest_of_line();
+    // answer[strlen(answer) - 1] = '\0';
+
+    int jaap = strcmp(score, answer);
+    if (jaap == 0) {
+      consume_rest_of_line();
+      printScore();
+      continue;
+    }
 
     // Determine validity of answer
     // First character
@@ -166,7 +181,7 @@ void answerLoop(int *x, int *y) {
       *x = 2;
       break;
     }
-    // printf("answer1: %c", answer[1]);
+
     switch (answer[1]) {
     case '1':
       *y = 0;
@@ -183,6 +198,7 @@ void answerLoop(int *x, int *y) {
   }
 }
 
+// Returns a random number within a given range.
 int randRange(int lower, int upper) {
   int num = (rand() % (upper - lower + 1)) + lower;
   return num;
@@ -211,6 +227,7 @@ struct vector gameIsOver() {
       result.beginY = 0;
       result.deltaX = 0;
       result.deltaY = 2;
+      result.playerLost = !playsX;
       result.isValid = true;
       return result;
     } else if (sum == 30) {
@@ -219,6 +236,7 @@ struct vector gameIsOver() {
       result.beginY = 0;
       result.deltaX = 0;
       result.deltaY = 2;
+      result.playerLost = playsX;
       result.isValid = true;
       return result;
     }
@@ -236,6 +254,7 @@ struct vector gameIsOver() {
       result.beginY = i;
       result.deltaX = 2;
       result.deltaY = 0;
+      result.playerLost = !playsX;
       result.isValid = true;
       return result;
     } else if (sum == 30) {
@@ -244,6 +263,7 @@ struct vector gameIsOver() {
       result.beginY = i;
       result.deltaX = 2;
       result.deltaY = 0;
+      result.playerLost = playsX;
       result.isValid = true;
       return result;
     }
@@ -260,6 +280,7 @@ struct vector gameIsOver() {
     result.beginY = 0;
     result.deltaX = 2;
     result.deltaY = 2;
+    result.playerLost = !playsX;
     result.isValid = true;
     return result;
   } else if (sum == 30) {
@@ -268,6 +289,7 @@ struct vector gameIsOver() {
     result.beginY = 0;
     result.deltaX = 2;
     result.deltaY = 2;
+    result.playerLost = playsX;
     result.isValid = true;
     return result;
   }
@@ -283,6 +305,7 @@ struct vector gameIsOver() {
     result.beginY = 0;
     result.deltaX = 2;
     result.deltaY = 2;
+    result.playerLost = !playsX;
     result.isValid = true;
     return result;
   } else if (sum == 30) {
@@ -291,6 +314,7 @@ struct vector gameIsOver() {
     result.beginY = 0;
     result.deltaX = 2;
     result.deltaY = 2;
+    result.playerLost = playsX;
     result.isValid = true;
     return result;
   }
@@ -319,17 +343,24 @@ void opponentTurn() {
   }
 }
 
-void playerTurn() { // Players turn
-  int x, y;
-  answerLoop(&x, &y);
-  printf("You picked (%d, %d)\n", x, y);
-  board[x][y] = playsX ? 1 : 2;
+// Players turn
+void playerTurn() {
+  while (1) {
+    int x, y;
+    answerLoop(&x, &y);
+    if (board[x][y] == 0) {
+      printf("You picked (%d, %d)\n", x, y);
+      board[x][y] = playsX ? 1 : 2;
+      break;
+    }
+    printf("That spot isn't free!\n");
+  }
 }
 
 void mainLoop() {
   int moveCount = 0;
   bool turnToggle = false;
-  
+
   while (1) {
     // Draw the board
     drawGrid(board);
@@ -342,11 +373,16 @@ void mainLoop() {
     }
 
     turnToggle = !turnToggle;
-    moveCount++;    
+    moveCount++;
 
     // Check game state
     struct vector r = gameIsOver();
     if (r.isValid) {
+      if (r.playerLost) {
+        cpuScore++;
+      } else {
+        playerScore++;
+      }
       drawVictoryGrid(board, r);
       break;
     }
@@ -362,17 +398,17 @@ void clearScreen() {
   printf("\e[1;1H\e[2J"); // Clears the screen
 }
 
-int characterIsValid(char c) { // Determines if given character by user is a valid character, non-zero value means valid.
+int characterIsValid(char c) { // Determines if given character by user is a
+                               // valid character, non-zero value means valid.
   if (c == 'X' || c == 'x') {
-      clearScreen();
-      printf("You picked the Xs.\n");
-      playsX = true;
-      return 1;
-  }
-  else if (c == 'O' || c == 'o') {
-      clearScreen();
-      printf("You picked the Os.\n");
-      return 2;
+    clearScreen();
+    printf("You picked the Xs.\n");
+    playsX = true;
+    return 1;
+  } else if (c == 'O' || c == 'o') {
+    clearScreen();
+    printf("You picked the Os.\n");
+    return 2;
   } else {
     printf("Invalid input. Please pick either Xs or Os by typing the letter");
     return 0;
@@ -392,10 +428,35 @@ void characterSelect() {
   }
 }
 
+bool continuePlaying() {
+  while (1) {
+    char c;
+    printf("Would you like to continue? (y/n): ");
+    c = fgetc(stdin);
+    consume_rest_of_line();
+
+    if (c == 'n') {
+      return false;
+    } else if (c == 'y') {
+      return true;
+    }
+
+    printf("Please pick either 'y' or 'n'.\n");
+  }
+}
+
 int main() {
   printf("Welcome to butter cheese and eggs in C.\n");
   srand(time(NULL)); // Give random number generator a seed.
   characterSelect();
 
-  mainLoop();
+  while (1) {
+    memset(board, 0, sizeof(board[0][0]) * WIDTH * WIDTH); // Clear the board
+    mainLoop();
+    if (!continuePlaying()) {
+      break;
+    }
+  }
+
+  printScore();
 }
